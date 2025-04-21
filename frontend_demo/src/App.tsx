@@ -160,9 +160,15 @@ const App = () => {
     <div className="app-container">
       <div className="header">
         <img 
-          src={`${process.env.PUBLIC_URL}/tmc-taxameter-centrale-logo-2.png`}
+          src="/tmc-logo.png"
           alt="TMC Taxameter Centrale logo"
           className="logo"
+          onError={(e) => {
+            const img = e.target as HTMLImageElement;
+            console.error('Logo failed to load:', img.src);
+            // Fallback naar de gehoste versie als lokaal laden faalt
+            img.src = 'https://henk-urqz.onrender.com/tmc-taxameter-centrale-logo-2.png';
+          }}
         />
         <h1 className={isCalling ? 'hidden' : ''}>
           Waarmee kan ik u van dienst zijn?

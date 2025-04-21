@@ -34,6 +34,7 @@
   height: 40px;
   width: auto;
   object-fit: contain;
+  max-width: 200px;
 }
 
 .header h1 {
