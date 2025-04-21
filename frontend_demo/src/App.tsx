@@ -18,18 +18,21 @@ const retellWebClient = new RetellWebClient();
 const App = () => {
   const [isCalling, setIsCalling] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Initialize the SDK
   useEffect(() => {
     retellWebClient.on("call_started", () => {
       console.log("call started");
       setHasError(false);
+      setIsTransitioning(false);
     });
     
     retellWebClient.on("call_ended", () => {
       console.log("call ended");
       setIsCalling(false);
       setHasError(false);
+      setIsTransitioning(false);
     });
     
     // When agent starts talking for the utterance
@@ -66,14 +69,20 @@ const App = () => {
       setHasError(true);
       retellWebClient.stopCall();
       setIsCalling(false);
+      setIsTransitioning(false);
     });
   }, []);
 
   const toggleConversation = async () => {
+    // Voorkom dubbele triggers tijdens transitie
+    if (isTransitioning) return;
+
     if (isCalling) {
+      setIsTransitioning(true);
       retellWebClient.stopCall();
     } else {
       try {
+        setIsTransitioning(true);
         setHasError(false);
         const registerCallResponse = await registerCall(agentId);
         if (registerCallResponse.access_token) {
@@ -85,6 +94,7 @@ const App = () => {
       } catch (error) {
         console.error("Failed to start call:", error);
         setHasError(true);
+        setIsTransitioning(false);
       }
     }
   };
@@ -114,12 +124,14 @@ const App = () => {
   }
 
   const getMicrophoneClass = () => {
+    if (isTransitioning) return 'mic-processing';
     if (hasError) return 'mic-error';
     if (isCalling) return 'mic-listening';
     return '';
   };
 
   const getStatusText = () => {
+    if (isTransitioning) return 'Een moment...';
     if (hasError) return 'Error';
     if (isCalling) return 'Luisteren';
     return 'Klik om te starten';
@@ -128,6 +140,11 @@ const App = () => {
   return (
     <div className="app-container">
       <div className="header">
+        <img 
+          src={process.env.PUBLIC_URL + '/tmc-taxameter-centrale-logo-2.png'}
+          alt="TMC Taxameter Centrale logo"
+          className="logo"
+        />
         <h1>Waarmee kan ik u van dienst zijn?</h1>
       </div>
 
@@ -151,14 +168,6 @@ const App = () => {
           </svg>
         </div>
         <div className="status-text">{getStatusText()}</div>
-      </div>
-
-      <div className="footer">
-        <span>Powered by</span>
-        <img
-          src="/tmc-taxameter-centrale-logo-2.png"
-          alt="TMC Taxameter Centrale logo"
-        />
       </div>
     </div>
   );

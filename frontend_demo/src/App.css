@@ -23,14 +23,34 @@
 }
 
 .header {
-  text-align: center;
-  margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  padding: 2rem;
+  position: relative;
+}
+
+.header .logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
 }
 
 .header h1 {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 1.5rem;
   font-weight: 400;
   color: #e6e6e6;
+  white-space: nowrap;
+}
+
+.main-title {
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: #e6e6e6;
+  text-align: center;
+  margin: 0;
 }
 
 .voice-container {
@@ -169,17 +189,27 @@
   margin-top: 2rem;
 }
 
-/* Footer */
-.footer {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding: 1rem;
-  font-size: .75rem;
-  color: #9e9e9e;
+/* Processing state */
+.mic-processing {
+  background: var(--blue-accent);
+  border-color: transparent;
 }
 
-.footer img {
-  height: 25px;
-  margin-left: 0.5rem;
+.mic-processing .listening-halo {
+  display: none;
+}
+
+.mic-processing::before {
+  display: block;
+  width: 140px;
+  height: 140px;
+  border: 4px solid transparent;
+  border-left-color: var(--text-color);
+  animation: spin 1s linear infinite;
+  z-index: 1;
+}
+
+@keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
