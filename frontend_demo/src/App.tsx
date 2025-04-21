@@ -17,16 +17,19 @@ const retellWebClient = new RetellWebClient();
 
 const App = () => {
   const [isCalling, setIsCalling] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   // Initialize the SDK
   useEffect(() => {
     retellWebClient.on("call_started", () => {
       console.log("call started");
+      setHasError(false);
     });
     
     retellWebClient.on("call_ended", () => {
       console.log("call ended");
       setIsCalling(false);
+      setHasError(false);
     });
     
     // When agent starts talking for the utterance
@@ -60,8 +63,9 @@ const App = () => {
     
     retellWebClient.on("error", (error) => {
       console.error("An error occurred:", error);
-      // Stop the call
+      setHasError(true);
       retellWebClient.stopCall();
+      setIsCalling(false);
     });
   }, []);
 
@@ -69,14 +73,18 @@ const App = () => {
     if (isCalling) {
       retellWebClient.stopCall();
     } else {
-      const registerCallResponse = await registerCall(agentId);
-      if (registerCallResponse.access_token) {
-        retellWebClient
-          .startCall({
+      try {
+        setHasError(false);
+        const registerCallResponse = await registerCall(agentId);
+        if (registerCallResponse.access_token) {
+          await retellWebClient.startCall({
             accessToken: registerCallResponse.access_token,
-          })
-          .catch(console.error);
-        setIsCalling(true); // Update button to "Stop" when conversation starts
+          });
+          setIsCalling(true);
+        }
+      } catch (error) {
+        console.error("Failed to start call:", error);
+        setHasError(true);
       }
     }
   };
@@ -100,18 +108,58 @@ const App = () => {
       const data: RegisterCallResponse = await response.json();
       return data;
     } catch (err) {
-      console.log(err);
-      throw new Error(err);
+      console.error(err);
+      throw err;
     }
   }
 
+  const getMicrophoneClass = () => {
+    if (hasError) return 'mic-error';
+    if (isCalling) return 'mic-listening';
+    return '';
+  };
+
+  const getStatusText = () => {
+    if (hasError) return 'Error';
+    if (isCalling) return 'Luisteren';
+    return 'Klik om te starten';
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <button onClick={toggleConversation}>
-          {isCalling ? "Stop" : "Start"}
-        </button>
-      </header>
+    <div className="app-container">
+      <div className="header">
+        <h1>Waarmee kan ik u van dienst zijn?</h1>
+      </div>
+
+      <div className="voice-container">
+        <div 
+          className={`microphone-animation ${getMicrophoneClass()}`}
+          onClick={toggleConversation}
+        >
+          {isCalling && !hasError && (
+            <>
+              <div className="listening-halo halo-1"></div>
+              <div className="listening-halo halo-2"></div>
+              <div className="listening-halo halo-3"></div>
+            </>
+          )}
+          <svg className="mic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        </div>
+        <div className="status-text">{getStatusText()}</div>
+      </div>
+
+      <div className="footer">
+        <span>Powered by</span>
+        <img
+          src="/tmc-taxameter-centrale-logo-2.png"
+          alt="TMC Taxameter Centrale logo"
+        />
+      </div>
     </div>
   );
 };
