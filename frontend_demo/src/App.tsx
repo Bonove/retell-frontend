@@ -4,6 +4,7 @@ import { RetellWebClient } from "retell-client-js-sdk";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8080";
 const agentId = process.env.REACT_APP_AGENT_ID;
+const BASE_PATH = process.env.REACT_APP_BASE_PATH || '';
 
 if (!agentId) {
   throw new Error('REACT_APP_AGENT_ID is not defined in environment variables');
@@ -19,6 +20,7 @@ const App = () => {
   const [isCalling, setIsCalling] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isCheckingMic, setIsCheckingMic] = useState(false);
 
   // Initialize the SDK
   useEffect(() => {
@@ -26,6 +28,7 @@ const App = () => {
       console.log("call started");
       setHasError(false);
       setIsTransitioning(false);
+      setIsCheckingMic(false);
     });
     
     retellWebClient.on("call_ended", () => {
@@ -35,27 +38,18 @@ const App = () => {
       setIsTransitioning(false);
     });
     
-    // When agent starts talking for the utterance
-    // useful for animation
     retellWebClient.on("agent_start_talking", () => {
       console.log("agent_start_talking");
     });
     
-    // When agent is done talking for the utterance
-    // useful for animation
     retellWebClient.on("agent_stop_talking", () => {
       console.log("agent_stop_talking");
     });
     
-    // Real time pcm audio bytes being played back, in format of Float32Array
-    // only available when emitRawAudioSamples is true
     retellWebClient.on("audio", (audio) => {
       // console.log(audio);
     });
     
-    // Update message such as transcript
-    // You can get transcrit with update.transcript
-    // Please note that transcript only contains last 5 sentences to avoid the payload being too large
     retellWebClient.on("update", (update) => {
       // console.log(update);
     });
@@ -70,18 +64,41 @@ const App = () => {
       retellWebClient.stopCall();
       setIsCalling(false);
       setIsTransitioning(false);
+      setIsCheckingMic(false);
     });
   }, []);
 
+  const checkMicrophonePermission = async (): Promise<boolean> => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+      return true;
+    } catch (error) {
+      console.error('Microfoon permissie geweigerd:', error);
+      return false;
+    }
+  };
+
   const toggleConversation = async () => {
-    // Voorkom dubbele triggers tijdens transitie
-    if (isTransitioning) return;
+    // Voorkom dubbele triggers tijdens transitie of mic check
+    if (isTransitioning || isCheckingMic) return;
 
     if (isCalling) {
       setIsTransitioning(true);
       retellWebClient.stopCall();
     } else {
       try {
+        // Start met microfoon check
+        setIsCheckingMic(true);
+        const hasMicPermission = await checkMicrophonePermission();
+        
+        if (!hasMicPermission) {
+          setHasError(true);
+          setIsCheckingMic(false);
+          return;
+        }
+
+        // Als we microfoon permissie hebben, start de call
         setIsTransitioning(true);
         setHasError(false);
         const registerCallResponse = await registerCall(agentId);
@@ -96,6 +113,7 @@ const App = () => {
         setHasError(true);
         setIsTransitioning(false);
       }
+      setIsCheckingMic(false);
     }
   };
 
@@ -124,15 +142,16 @@ const App = () => {
   }
 
   const getMicrophoneClass = () => {
-    if (isTransitioning) return 'mic-processing';
+    if (isCheckingMic || isTransitioning) return 'mic-processing';
     if (hasError) return 'mic-error';
     if (isCalling) return 'mic-listening';
     return '';
   };
 
   const getStatusText = () => {
-    if (isTransitioning) return 'Een moment...';
-    if (hasError) return 'Error';
+    if (isCheckingMic) return 'Microfoon toestemming vragen...';
+    if (isTransitioning) return 'Verbinding maken...';
+    if (hasError) return 'Microfoon toestemming geweigerd';
     if (isCalling) return 'Luisteren';
     return 'Klik om te starten';
   };
@@ -141,11 +160,13 @@ const App = () => {
     <div className="app-container">
       <div className="header">
         <img 
-          src={process.env.PUBLIC_URL + '/tmc-taxameter-centrale-logo-2.png'}
+          src={`${process.env.PUBLIC_URL}/tmc-taxameter-centrale-logo-2.png`}
           alt="TMC Taxameter Centrale logo"
           className="logo"
         />
-        <h1>Waarmee kan ik u van dienst zijn?</h1>
+        <h1 className={isCalling ? 'hidden' : ''}>
+          Waarmee kan ik u van dienst zijn?
+        </h1>
       </div>
 
       <div className="voice-container">
