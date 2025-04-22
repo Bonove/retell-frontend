@@ -21,6 +21,10 @@ const App = () => {
   const [hasError, setHasError] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isCheckingMic, setIsCheckingMic] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneError, setPhoneError] = useState('');
 
   // Initialize the SDK
   useEffect(() => {
@@ -156,6 +160,92 @@ const App = () => {
     return 'Klik om te starten';
   };
 
+  const formatPhoneNumber = (input: string): string => {
+    // Verwijder alle niet-numerieke karakters
+    const numbers = input.replace(/\D/g, '');
+    
+    // Als het nummer met 0 begint, vervang dit door +31
+    if (numbers.startsWith('0')) {
+      return '+31' + numbers.substring(1);
+    }
+    
+    // Als het nummer met 31 begint, voeg + toe
+    if (numbers.startsWith('31')) {
+      return '+' + numbers;
+    }
+    
+    return numbers;
+  };
+
+  const validatePhoneNumber = (number: string): boolean => {
+    // Check of het nummer voldoet aan het formaat +31612345678
+    const phoneRegex = /^\+31[1-9][0-9]{8}$/;
+    return phoneRegex.test(number);
+  };
+
+  const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const formattedNumber = formatPhoneNumber(input);
+    setPhoneNumber(formattedNumber);
+    
+    if (formattedNumber.length > 0) {
+      if (!validatePhoneNumber(formattedNumber)) {
+        setPhoneError('Voer een geldig Nederlands mobiel nummer in: +31612345678');
+      } else {
+        setPhoneError('');
+      }
+    } else {
+      setPhoneError('');
+    }
+  };
+
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validatePhoneNumber(phoneNumber)) {
+      setPhoneError('Voer een geldig Nederlands mobiel nummer in: +31612345678');
+      return;
+    }
+
+    try {
+      const response = await fetch('https://automator-cvit.onrender.com/webhook/henk-belmeterug', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Origin': window.location.origin
+        },
+        mode: 'cors',
+        credentials: 'omit',
+        body: JSON.stringify({
+          phoneNumber: phoneNumber
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Sluit panel
+      setIsPanelOpen(false);
+      
+      // Reset form
+      setPhoneNumber('');
+      setPhoneError('');
+      
+      // Toon success message
+      setShowSuccess(true);
+      
+      // Verberg success message na 5 seconden
+      setTimeout(() => {
+        setShowSuccess(false);
+      }, 5000);
+    } catch (error) {
+      console.error('Fout bij verwerken terugbelverzoek:', error);
+      setPhoneError('Er is een fout opgetreden. Probeer het later opnieuw.');
+    }
+  };
+
   return (
     <div className="app-container">
       <div className="header">
@@ -166,7 +256,6 @@ const App = () => {
           onError={(e) => {
             const img = e.target as HTMLImageElement;
             console.error('Logo failed to load:', img.src);
-            // Fallback naar de gehoste versie als lokaal laden faalt
             img.src = 'https://henk-urqz.onrender.com/tmc-taxameter-centrale-logo-2.png';
           }}
         />
@@ -195,6 +284,58 @@ const App = () => {
           </svg>
         </div>
         <div className="status-text">{getStatusText()}</div>
+      </div>
+
+      {/* Call Button */}
+      <button className="call-button" onClick={() => setIsPanelOpen(true)}>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+        </svg>
+      </button>
+
+      {/* Overlay */}
+      <div className={`overlay ${isPanelOpen ? 'show' : ''}`} onClick={() => setIsPanelOpen(false)} />
+
+      {/* Phone Panel */}
+      <div className={`phone-panel ${isPanelOpen ? 'show' : ''}`}>
+        <div className="panel-header">
+          <h2>Bel mij terug</h2>
+          <button className="close-button" onClick={() => setIsPanelOpen(false)}>&times;</button>
+        </div>
+        
+        <form className="phone-form" onSubmit={handlePhoneSubmit}>
+          <input
+            type="tel"
+            className="phone-input"
+            placeholder="+31612345678"
+            value={phoneNumber}
+            onChange={handlePhoneInput}
+            required
+          />
+          {phoneError && <div className="error-message">{phoneError}</div>}
+          <button 
+            type="submit" 
+            className="submit-button"
+            disabled={!validatePhoneNumber(phoneNumber)}
+          >
+            Bel mij
+          </button>
+          
+          <div className="direct-call">
+            <p>Of bel Henk zelf</p>
+            <a href="tel:+18455721363">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+              </svg>
+              +1 (845) 572-1363
+            </a>
+          </div>
+        </form>
+      </div>
+
+      {/* Success Message */}
+      <div className={`success-message ${showSuccess ? 'show' : ''}`}>
+        We bellen u zo terug!
       </div>
     </div>
   );
