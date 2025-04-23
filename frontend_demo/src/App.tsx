@@ -5,9 +5,14 @@ import { RetellWebClient } from "retell-client-js-sdk";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8080";
 const agentId = process.env.REACT_APP_AGENT_ID;
 const BASE_PATH = process.env.REACT_APP_BASE_PATH || '';
+const WEBHOOK_URL = process.env.REACT_APP_WEBHOOK_URL;
 
 if (!agentId) {
   throw new Error('REACT_APP_AGENT_ID is not defined in environment variables');
+}
+
+if (!WEBHOOK_URL) {
+  throw new Error('REACT_APP_WEBHOOK_URL is not defined in environment variables');
 }
 
 interface RegisterCallResponse {
@@ -208,7 +213,7 @@ const App = () => {
     }
 
     try {
-      const response = await fetch('https://automator-cvit.onrender.com/webhook/henk-belmeterug', {
+      const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
