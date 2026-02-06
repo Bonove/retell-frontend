@@ -461,3 +461,43 @@
     font-size: 1.5rem;
   }
 }
+
+/* ====== Mute Button ====== */
+.mute-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid var(--blue-accent);
+  background: transparent;
+  color: var(--blue-accent);
+  cursor: pointer;
+  margin-top: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.mute-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.mute-button:hover {
+  background: rgba(52, 152, 219, 0.1);
+  transform: scale(1.05);
+}
+
+.mute-button:active {
+  transform: scale(0.95);
+}
+
+.mute-button.muted {
+  border-color: var(--error-red);
+  color: var(--error-red);
+  background: rgba(255, 74, 74, 0.1);
+}
+
+.mute-button.muted:hover {
+  background: rgba(255, 74, 74, 0.2);
+}
