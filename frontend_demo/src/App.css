@@ -1,38 +1,503 @@
-.App {
+:root {
+  --dark-bg: #0a1520;
+  --blue-accent: #3498db;
+  --error-red: #ff4a4a;
+  --text-color: #ffffff;
+  --slide-transition: 0.3s ease-in-out;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.app-container {
+  background: var(--dark-bg);
+  color: var(--text-color);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  justify-content: space-between;
+  padding: 2rem;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 2rem;
+  position: relative;
+}
+
+.header .logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+  max-width: 200px;
+}
+
+.header h1 {
+  width: 100%;
   text-align: center;
+  font-size: clamp(1.2rem, 4vw, 1.5rem);
+  font-weight: 400;
+  color: #e6e6e6;
+  margin-top: 2rem;
+  opacity: 1;
+  transition: opacity 0.3s ease;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.header h1.hidden {
+  opacity: 0;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+@media (max-width: 768px) {
+  .header {
+    padding: 1.5rem;
+  }
+
+  .header h1 {
+    margin-top: 1.5rem;
+    padding: 0 1rem;
   }
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.main-title {
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: #e6e6e6;
+  text-align: center;
+  margin: 0;
+}
+
+.voice-container {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
+}
+
+.microphone-animation {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  border: 2px solid var(--blue-accent);
+  transition: border-color 0.3s ease;
+}
+
+.microphone-animation::before,
+.microphone-animation::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  display: none;
+}
+
+/* Luisteren state */
+.mic-listening {
+  background: var(--blue-accent);
+  border-color: transparent;
+}
+
+.mic-listening .listening-halo {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid var(--blue-accent);
+  top: 50%;
+  left: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  animation: halo-pulse 2s infinite ease-out;
+  z-index: 1;
+}
+
+.mic-listening .halo-2 {
+  animation-delay: .5s;
+}
+
+.mic-listening .halo-3 {
+  animation-delay: 1s;
+}
+
+.halo-1 {
+  width: 190px;
+  height: 190px;
+}
+
+.halo-2 {
+  width: 230px;
+  height: 230px;
+}
+
+.halo-3 {
+  width: 270px;
+  height: 270px;
+}
+
+@keyframes halo-pulse {
+  0% {
+    opacity: .7;
+    transform: translate(-50%, -50%) scale(.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+}
+
+/* Error state */
+.mic-error {
+  background: transparent;
+  border-color: transparent;
+}
+
+.mic-error .listening-halo {
+  display: none;
+}
+
+.mic-error::after {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--error-red);
+  animation: error-pulse 0.8s ease-out infinite;
+  z-index: 1;
+}
+
+@keyframes error-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.12);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Microfoon icon */
+.mic-icon {
+  width: 60px;
+  height: 70px;
+  stroke: var(--text-color);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  z-index: 2;
+}
+
+/* Status text */
+.status-text {
+  text-align: center;
+  font-size: 1.4rem;
+  color: #e6e6e6;
+  margin-top: 2rem;
+}
+
+/* Processing state */
+.mic-processing {
+  background: var(--blue-accent);
+  border-color: transparent;
+}
+
+.mic-processing .listening-halo {
+  display: none;
+}
+
+.mic-processing::before {
+  display: block;
+  width: 140px;
+  height: 140px;
+  border: 4px solid transparent;
+  border-left-color: var(--text-color);
+  animation: spin 1s linear infinite;
+  z-index: 1;
+}
+
+@keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ====== Call Button ====== */
+.call-button {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: transparent;
   color: white;
+  border: 2px solid var(--blue-accent);
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  cursor: pointer;
+  z-index: 10;
+  transition: transform 0.2s;
 }
 
-.App-link {
-  color: #61dafb;
+.call-button:hover {
+  transform: scale(1.05);
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+.call-button svg {
+  width: 28px;
+  height: 28px;
+  stroke: white;
+  stroke-width: 2;
+  fill: none;
+}
+
+/* ====== Phone Slide-in Panel ====== */
+.phone-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #132433;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
+  transform: translateY(100%);
+  transition: transform var(--slide-transition);
+  z-index: 20;
+}
+
+.phone-panel.show {
+  transform: translateY(0);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.panel-header h2 {
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  color: #9e9e9e;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.phone-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.phone-input {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  padding: 15px;
+  color: white;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.phone-input::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+
+.submit-button {
+  background: var(--blue-accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 15px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 1.5rem;
+}
+
+.submit-button:hover {
+  background: #2980b9;
+}
+
+.error-message {
+  color: var(--error-red);
+  font-size: 0.9rem;
+  margin: -0.5rem 0 1rem;
+}
+
+.submit-button:disabled {
+  background: #666;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.submit-button:disabled:hover {
+  background: #666;
+}
+
+.direct-call {
+  text-align: center;
+  margin-top: 0.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  display: none;
+}
+
+.direct-call p {
+  color: #9e9e9e;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.direct-call a {
+  color: var(--blue-accent);
+  font-size: 1.1rem;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  margin-top: 0.5rem;
+}
+
+.direct-call a:hover {
+  text-decoration: underline;
+}
+
+.direct-call svg {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  stroke: var(--blue-accent);
+}
+
+/* Only show direct call on mobile */
+@media (max-width: 768px) {
+  .direct-call {
+    display: block;
   }
-  to {
-    transform: rotate(360deg);
+}
+
+/* ====== Overlay ====== */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--slide-transition);
+  z-index: 15;
+}
+
+.overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ====== Success Message ====== */
+.success-message {
+  position: fixed;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  background: #27ae60;
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transition: transform 0.3s ease-out;
+  z-index: 30;
+  text-align: center;
+}
+
+.success-message.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ====== Desktop Specific Styles ====== */
+@media (min-width: 768px) {
+  .phone-panel {
+    width: 400px;
+    right: auto;
+    transform: translateX(-100%);
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    border-top-left-radius: 0;
+    height: 100vh;
+    padding-top: 4rem;
   }
+  
+  .phone-panel.show {
+    transform: translateX(0);
+  }
+  
+  .panel-header h2 {
+    font-size: 1.5rem;
+  }
+}
+
+/* ====== Mute Button ====== */
+.mute-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid var(--blue-accent);
+  background: transparent;
+  color: var(--blue-accent);
+  cursor: pointer;
+  margin-top: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.mute-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.mute-button:hover {
+  background: rgba(52, 152, 219, 0.1);
+  transform: scale(1.05);
+}
+
+.mute-button:active {
+  transform: scale(0.95);
+}
+
+.mute-button.muted {
+  border-color: var(--error-red);
+  color: var(--error-red);
+  background: rgba(255, 74, 74, 0.1);
+}
+
+.mute-button.muted:hover {
+  background: rgba(255, 74, 74, 0.2);
 }
